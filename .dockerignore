@@ -1,0 +1,16 @@
+node_modules
+**/node_modules
+.next
+**/.next
+out
+**/out
+dist
+**/dist
+.git
+.gitignore
+npm-debug.log*
+*.log
+.env
+.env.*
+Dockerfile
+docker-compose.yml
