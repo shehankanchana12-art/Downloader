@@ -42,6 +42,25 @@ docker compose up --build
 
 The image installs Python, `yt-dlp`, FFmpeg and Node.js, builds the frontend, and serves everything from a single Express process. `/tmp` is a 2 GB tmpfs, so temporary downloads never touch the host disk.
 
+## Put it on the internet
+
+GitHub Pages cannot host this app — it only serves static files, and downloading needs `yt-dlp` + FFmpeg running on a server. To get a real `https://` URL, use a small VPS (1 vCPU, 2 GB RAM, 20 GB disk is plenty):
+
+1. Point a domain's `A` record at the server's public IP (e.g. `clipfetch.example.com`).
+2. SSH in as root and run:
+
+   ```bash
+   curl -fsSL https://raw.githubusercontent.com/shehankanchana12-art/Downloader/main/deploy/setup.sh | bash -s -- clipfetch.example.com
+   ```
+
+3. Open `https://clipfetch.example.com`. Caddy obtains the certificate automatically.
+
+The script installs Docker, clones the repo into `/opt/clipfetch`, and starts [`deploy/docker-compose.prod.yml`](deploy/docker-compose.prod.yml): the app plus Caddy, which publishes only ports 80/443 and proxies to the app over the compose network with response buffering disabled (so SSE progress and large downloads stream properly). Re-run it to deploy the latest `main`.
+
+Prefer to drive it by hand? `cd deploy`, copy `.env.example` to `.env`, set `DOMAIN`, then `docker compose -f docker-compose.prod.yml up -d --build`.
+
+**Heads-up on YouTube:** from datacenter IPs YouTube often answers "Sign in to confirm you're not a bot" and refuses to extract. The app turns that into a friendly rate-limit message rather than a raw error. TikTok, Instagram, X, Vimeo, Reddit and direct media links generally work fine from a VPS; running the container on a home machine avoids the issue for YouTube.
+
 ## Local development
 
 Requirements: Node.js 20+, Python 3.10+, `yt-dlp` and `ffmpeg` on your `PATH`.
@@ -136,7 +155,7 @@ Reports whether `yt-dlp` and FFmpeg are available, plus the duration limit.
 | `DOWNLOAD_TIMEOUT_MS` | `900000` | Hard cap for one download |
 | `YTDLP_PATH` / `FFMPEG_PATH` | `yt-dlp` / `ffmpeg` | Binary paths |
 | `WEB_ROOT` | `web/out` | Static frontend directory |
-| `TRUST_PROXY` | `loopback` | Express `trust proxy` (set to `1` behind one reverse proxy) |
+| `TRUST_PROXY` | `loopback` | Express `trust proxy` (set to `1` behind one reverse proxy, as in `deploy/docker-compose.prod.yml`) |
 | `CORS_ORIGIN` | `*` | Comma-separated allowed origins |
 | `JOB_TTL_MS` | `900000` | How long job snapshots are kept in memory |
 

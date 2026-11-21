@@ -1,0 +1,18 @@
+# Reverse proxy for Clipfetch.
+# DOMAIN comes from the environment (see deploy/.env.example) and Caddy obtains
+# a Let's Encrypt certificate for it automatically.
+{$DOMAIN} {
+	encode zstd gzip
+
+	# SSE progress and large attachments must not be buffered.
+	reverse_proxy clipfetch:4000 {
+		flush_interval -1
+	}
+
+	header {
+		# The app never frames or embeds anything else.
+		X-Content-Type-Options nosniff
+		Referrer-Policy no-referrer
+		-Server
+	}
+}
