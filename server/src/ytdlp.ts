@@ -55,6 +55,17 @@ interface RunResult {
 const MAX_STDOUT_BYTES = 32 * 1024 * 1024
 const MAX_STDERR_BYTES = 256 * 1024
 
+/**
+ * yt-dlp treats `--ffmpeg-location` as a filesystem path, so a bare binary name
+ * such as the default "ffmpeg" makes it report "ffprobe and ffmpeg not found".
+ * Only pass the flag when we really have a path; otherwise let yt-dlp use PATH.
+ */
+function ffmpegLocationArgs(): string[] {
+  const location = config.ffmpegPath.trim()
+  const looksLikePath = path.isAbsolute(location) || location.includes('/') || location.includes('\\')
+  return looksLikePath ? ['--ffmpeg-location', location] : []
+}
+
 function baseArgs(): string[] {
   return [
     '--no-warnings',
@@ -64,8 +75,7 @@ function baseArgs(): string[] {
     '20',
     '--retries',
     '3',
-    '--ffmpeg-location',
-    config.ffmpegPath
+    ...ffmpegLocationArgs()
   ]
 }
 
